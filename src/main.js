@@ -6,6 +6,7 @@ import { makeSpecies, SPECIES_ORDER } from './species/presets.js';
 import { morphParams, applySwimMode, SWIM_MODES, RD_PRESETS } from './core/params.js';
 import { clone } from './core/math.js';
 import { FishRig } from './rig/FishRig.js';
+import { BRAINS } from './rig/behavior.js';
 import { ReactionDiffusion } from './pattern/reactionDiffusion.js';
 import { buildEnvironment, buildMarineSnow } from './scene/environment.js';
 import { applyBodySurface, applyFinSurface } from './shading/FishMaterial.js';
@@ -135,6 +136,17 @@ function syncInto(target, source) {
   }
 }
 
+// Keep the URL in sync with the fish as it's edited, so people can just copy it
+// from the address bar. Debounced (encoding the whole tree on every slider frame
+// would be wasteful), and replaceState so it doesn't spam browser history.
+let urlTimer = 0;
+function scheduleUrlUpdate() {
+  clearTimeout(urlTimer);
+  urlTimer = setTimeout(() => {
+    history.replaceState(null, '', `${location.origin}${location.pathname}#fish=${encodeGenome(params)}`);
+  }, 500);
+}
+
 function setSpecies(id) {
   currentSpecies = id;
   ui.morph = 0;
@@ -144,6 +156,7 @@ function setSpecies(id) {
   rebuild(false);
   highlightSpecies(id);
   refreshControllers();
+  scheduleUrlUpdate();
 }
 
 function applyMorph() {
@@ -152,6 +165,7 @@ function applyMorph() {
   syncInto(params, morphParams(a, b, ui.morph));
   rebuild(true);
   refreshControllers();
+  scheduleUrlUpdate();
 }
 
 // -- Explore folder
@@ -201,6 +215,10 @@ const cStiff = fLoco.add(params.swim.envelope, 'stiffness', 0, 1, 0.01).name('an
 const cPlane = fLoco.add(params.swim, 'plane', 0, 1, 0.01).name('plane (lat→dorsoven)').onChange(() => rebuild(true));
 const cTurn = fLoco.add(params.swim, 'turn', -1, 1, 0.01).name('turn bias').onChange(onSwim);
 const cIdle = fLoco.add(params.swim, 'idle', 0, 1, 0.01).name('idle drift').onChange(onSwim);
+fLoco.add(params.behavior, 'brain', Object.keys(BRAINS)).name('temperament').onChange((b) => {
+  if (rig) rig.behavior.set(BRAINS[b]);
+  updateLabels();
+});
 fLoco.close();
 
 function onSwim() { rig.swimmer.set(params); }
@@ -350,6 +368,9 @@ function toast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { el.style.opacity = '0'; }, 2200);
 }
+
+// Any GUI edit refreshes the shareable URL (debounced inside).
+gui.onChange(scheduleUrlUpdate);
 
 // ---- boot ---------------------------------------------------------------------
 const sharedFish = loadGenomeFromHash();

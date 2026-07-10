@@ -162,6 +162,7 @@ function minnow() {
   });
   applySwimMode(p, 'subcarangiform');
   Object.assign(p.swim, { speedBL: 3.0, strouhal: 0.32, plane: 0 });
+  p.behavior.brain = 'skittish'; // minnows dart
   p.fins = [
     ridge('dorsal1', 'dorsal', 0.44, 0.60, 0.085, { outline: OUTLINE.softDorsal, spineFrac: 0.15 }),
     ridge('anal', 'ventral', 0.62, 0.73, 0.062, { outline: OUTLINE.anal, spineFrac: 0.1 }),
@@ -206,6 +207,7 @@ function tuna() {
   });
   applySwimMode(p, 'thunniform');
   Object.assign(p.swim, { speedBL: 3.4, strouhal: 0.3, plane: 0 });
+  p.behavior.brain = 'burstGlide'; // powerful cruiser that surges
   p.fins = [
     ridge('dorsal1', 'dorsal', 0.30, 0.42, 0.075, { outline: OUTLINE.spinyDorsal, spineFrac: 0.9, rays: 13 }),
     ridge('dorsal2', 'dorsal', 0.48, 0.57, 0.058, { outline: OUTLINE.lowRidge, spineFrac: 0.1, rays: 12 }),
@@ -267,6 +269,7 @@ function eel() {
   p.spine.joints = 40; // needs the resolution to carry >1 wavelength cleanly
   applySwimMode(p, 'anguilliform');
   Object.assign(p.swim, { speedBL: 1.1, strouhal: 0.35, plane: 0 });
+  p.behavior.brain = 'cruiser'; // steady, sinuous
   p.fins = [
     ridge('dorsal1', 'dorsal', 0.30, 0.985, 0.020, { outline: OUTLINE.fringe, rays: 40, spineFrac: 0, bones: 2, rayVisibility: 0.15, motion: { ...M.medianStabiliser, curlGain: 1.5 } }),
     ridge('anal', 'ventral', 0.60, 0.985, 0.016, { outline: OUTLINE.fringe, rays: 30, spineFrac: 0, bones: 2, rayVisibility: 0.15, motion: { ...M.medianStabiliser, curlGain: 1.5 } }),
@@ -313,6 +316,7 @@ function boxfish() {
   });
   applySwimMode(p, 'ostraciiform');
   Object.assign(p.swim, { speedBL: 0.8, strouhal: 0.5, plane: 0, freqOverride: 2.6 });
+  p.behavior.brain = 'hover'; // phlegmatic; sculls slowly
   p.fins = [
     ridge('dorsal1', 'dorsal', 0.66, 0.755, 0.05, { rays: 10, spineFrac: 0, outline: OUTLINE.lowRidge, motion: clone(M.medianPropulsor) }),
     ridge('anal', 'ventral', 0.68, 0.775, 0.048, { rays: 10, spineFrac: 0, outline: OUTLINE.lowRidge, motion: { ...M.medianPropulsor, swingPhase: Math.PI } }),
@@ -364,6 +368,7 @@ function angelfish() {
   });
   applySwimMode(p, 'carangiform');
   Object.assign(p.swim, { speedBL: 0.7, strouhal: 0.35, plane: 0 });
+  p.behavior.brain = 'hover'; // slow, deliberate
   p.swim.envelope.gain = 0.55; // hovers on its fins more than it undulates
   p.fins = [
     ridge('dorsal1', 'dorsal', 0.26, 0.74, 0.40, { rays: 22, spineFrac: 0.45, outline: OUTLINE.sailDorsal, bones: 4, motion: { ...M.medianStabiliser, curlGain: 1.3 } }),
@@ -423,6 +428,7 @@ function pufferfish() {
   });
   applySwimMode(p, 'ostraciiform');
   Object.assign(p.swim, { speedBL: 0.55, strouhal: 0.5, plane: 0, freqOverride: 2.0 });
+  p.behavior.brain = 'hover'; // phlegmatic drifter
   p.swim.envelope.gain = 1.6; // its peduncle is flexible, unlike a boxfish's
   p.fins = [
     ridge('dorsal1', 'dorsal', 0.735, 0.80, 0.045, { rays: 9, spineFrac: 0, outline: OUTLINE.lowRidge, motion: clone(M.medianPropulsor) }),
@@ -469,6 +475,7 @@ function clownfish() {
   });
   applySwimMode(p, 'carangiform');
   Object.assign(p.swim, { speedBL: 1.2, strouhal: 0.35, plane: 0 });
+  p.behavior.brain = 'skittish'; // busy little bobber
   p.swim.envelope.gain = 0.75;
   p.fins = [
     ridge('dorsal1', 'dorsal', 0.27, 0.50, 0.085, { rays: 12, spineFrac: 0.95, outline: OUTLINE.spinyDorsal }),
@@ -533,6 +540,7 @@ function orca() {
     strouhal: 0.25,
     idle: 0.2,
   });
+  p.behavior.brain = 'steady'; // slow, powerful strokes
   Object.assign(p.swim.envelope, { c0: 0.02, c1: -0.06, c2: 0.19, stiffness: 0.85, stiffStart: 0.62, headYaw: 0.012 });
   p.fins = [
     // Tall erect triangular keel. Males reach ~1.8 m, height >= 2x base.
@@ -596,6 +604,7 @@ function blueWhale() {
   p.spine.joints = 32;
   applySwimMode(p, 'thunniform');
   Object.assign(p.swim, { plane: 1.0, speedBL: 0.6, strouhal: 0.26, idle: 0.12 });
+  p.behavior.brain = 'steady'; // slow, powerful strokes
   Object.assign(p.swim.envelope, { c0: 0.015, c1: -0.05, c2: 0.17, stiffness: 0.88, stiffStart: 0.66, headYaw: 0.008 });
   p.fins = [
     ridge('dorsal1', 'dorsal', 0.755, 0.80, 0.022, { rays: 6, spineFrac: 1.0, rayVisibility: 0.0, outline: OUTLINE.keel, bones: 2, motion: { ...M.medianStabiliser, curlGain: 0.2 } }),

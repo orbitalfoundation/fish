@@ -3,6 +3,7 @@ import { buildBodyGeometry } from './geometry.js';
 import { FishSkeleton } from './skeleton.js';
 import { buildFins } from './fins.js';
 import { Swimmer } from './swim.js';
+import { Behavior, BRAINS } from './behavior.js';
 import { makeBodyMaterial, makeFinMaterial, applyBodySurface, applyFinSurface } from '../shading/FishMaterial.js';
 
 /**
@@ -50,6 +51,7 @@ export class FishRig extends THREE.Group {
     if (params.eyes?.enabled) this._buildEyes(params, profile);
 
     this.swimmer = new Swimmer(params);
+    this.behavior = new Behavior(BRAINS[params.behavior?.brain] || BRAINS.cruiser, params.pattern.seed || 1);
 
     // Frame the fish so its centre sits at the world origin.
     this._recentre();
@@ -105,6 +107,10 @@ export class FishRig extends THREE.Group {
   }
 
   update(dt) {
+    // The brain sets effort + heading drift; the swimmer reads them.
+    this.behavior.update(dt);
+    this.swimmer.activity = this.behavior.activity;
+    this.swimmer.turnDyn = this.behavior.turn;
     this.swimmer.advance(dt);
     const plane = this.params.swim.plane || 0;
     this.skeleton.pose((s) => this.swimmer.centreline(s), plane);

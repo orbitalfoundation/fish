@@ -151,6 +151,10 @@ export function defaultParams() {
       recoil: 1.0, // 1 = hold the recoil pivot still (fish swims "in place")
     },
 
+    // Temperament. A named "brain" (see rig/behavior.js) modulates swim effort
+    // over time: cruiser, burstGlide, hover (phlegmatic), skittish (darty), steady.
+    behavior: { brain: 'cruiser' },
+
     fins: [],
 
     /**
