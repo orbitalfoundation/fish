@@ -11,35 +11,70 @@ import * as THREE from 'three';
  * feeds the PBR reflections that make the clearcoat and iridescence read.
  */
 export function buildEnvironment(scene, renderer) {
-  const topCol = new THREE.Color(0x1a3a52);
-  const midCol = new THREE.Color(0x0a1c2c);
-  const deepCol = new THREE.Color(0x03080e);
+  // Underwater column: bright surface light up top, deepening to dark blue below.
+  // The horizon band (where the camera usually looks) is a legible mid-blue, not
+  // black -- that was the whole "why is it pure black" problem: the old gradient
+  // put the darkest value right at eye level.
+  const surfaceCol = new THREE.Color(0x4f9ac2); // sunlit surface
+  const midCol = new THREE.Color(0x123f5c); // horizon water
+  const deepCol = new THREE.Color(0x040f1c); // below, into the dark
 
-  // Gradient dome (rendered from the inside).
-  const domeGeo = new THREE.SphereGeometry(1, 32, 24);
+  const domeGeo = new THREE.SphereGeometry(1, 48, 32);
   const domeMat = new THREE.ShaderMaterial({
     side: THREE.BackSide,
     depthWrite: false,
     uniforms: {
-      uTop: { value: topCol }, uMid: { value: midCol }, uDeep: { value: deepCol },
+      uSurface: { value: surfaceCol }, uMid: { value: midCol }, uDeep: { value: deepCol },
       uTime: { value: 0 },
     },
     vertexShader: `varying vec3 vDir; void main(){ vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
-    fragmentShader: `
-      varying vec3 vDir; uniform vec3 uTop, uMid, uDeep; uniform float uTime;
+    fragmentShader: /* glsl */`
+      varying vec3 vDir;
+      uniform vec3 uSurface, uMid, uDeep;
+      uniform float uTime;
+
+      // Cheap animated caustic/shimmer: layered advected sine cells.
+      float caustic(vec2 p, float t){
+        vec2 q = p;
+        float v = 0.0, amp = 0.5;
+        for(int i=0;i<3;i++){
+          q += vec2(sin(q.y*1.7 + t), cos(q.x*1.7 - t)) * 0.6;
+          v += amp * (0.5 + 0.5*sin(q.x*2.3)*cos(q.y*2.1));
+          amp *= 0.55; t *= 1.3; q *= 1.8;
+        }
+        return pow(clamp(v, 0.0, 1.0), 3.0);
+      }
+
       void main(){
-        float h = normalize(vDir).y;
-        vec3 c = mix(uMid, uDeep, smoothstep(0.0, -0.6, h));
-        c = mix(c, uTop, smoothstep(0.05, 0.9, h));
-        // faint god-ray banding drifting near the surface
-        float ray = 0.04 * smoothstep(0.2,1.0,h) * (0.5+0.5*sin(vDir.x*3.0 + uTime*0.15));
-        gl_FragColor = vec4(c + ray, 1.0);
+        vec3 nd = normalize(vDir);
+        float h = nd.y;                       // -1 down .. +1 up
+
+        // Vertical gradient, lighter toward the surface.
+        vec3 col = mix(uMid, uDeep, smoothstep(-0.05, -0.75, h));
+        col = mix(col, uSurface, smoothstep(0.02, 0.85, h));
+
+        // God-ray shafts descending from the surface, strongest overhead.
+        float a = atan(nd.z, nd.x);
+        float rays = sin(a*7.0 + uTime*0.09)
+                   + 0.6*sin(a*15.0 - uTime*0.12)
+                   + 0.4*sin(a*27.0 + uTime*0.06);
+        rays = max(rays, 0.0) / 2.0;
+        float rayMask = smoothstep(0.05, 1.0, h) * rays * rays;
+        col += uSurface * rayMask * 0.5;
+
+        // Caustic shimmer, concentrated near the surface.
+        float c = caustic(nd.xz * 5.0 + vec2(0.0, uTime*0.05), uTime*0.4);
+        col += vec3(0.45,0.72,0.92) * c * smoothstep(0.15, 1.0, h) * 0.14;
+
+        gl_FragColor = vec4(col, 1.0);
       }`,
   });
   const dome = new THREE.Mesh(domeGeo, domeMat);
-  dome.scale.setScalar(500);
+  dome.renderOrder = -1;
+  dome.frustumCulled = false;
   scene.add(dome);
 
+  // Fog tinted to the horizon water, so distance fades to blue haze (never black).
   scene.fog = new THREE.FogExp2(midCol.getHex(), 0.02);
   // Keep reflected environment modest so near-black skin (orca) stays black and
   // pale bodies don't wash out.
@@ -80,8 +115,15 @@ export function buildEnvironment(scene, renderer) {
       key.position.set(s * 0.5, s * 3, s * 1.2);
       rim.position.set(-s * 1.5, s * 0.5, -s * 2.0);
     },
-    update(t) {
+    update(t, camera) {
       domeMat.uniforms.uTime.value = t;
+      // Keep the sky-dome centred on the camera and sized inside the frustum, so
+      // it always fills the background regardless of how the far plane is scaled
+      // for the current animal (a whale's far plane is huge, a minnow's tiny).
+      if (camera) {
+        dome.position.copy(camera.position);
+        dome.scale.setScalar((camera.far - camera.near) * 0.45);
+      }
     },
   };
 }

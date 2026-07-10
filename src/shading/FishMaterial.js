@@ -175,14 +175,21 @@ const COLOR_FRAG = /* glsl */ `
     col = mix(col, vec3(0.96,0.97,0.98), bar);
     float edge = clamp(clownBars(vUv + vec2(0.0, 0.018)) - clownBars(vUv - vec2(0.0,0.018)), 0.0, 1.0);
     col = mix(col, vec3(0.03,0.03,0.04), abs(edge)*0.9);
-  } else if (uMarkings == 2) { // orca: white belly, flank patch, grey saddle
-    float belly = 1.0 - smoothstep(-0.55, -0.15, d);
-    col = mix(col, vec3(0.95,0.96,0.94), belly);
-    // eye patch: an ellipse just above/behind the eye
-    float ep = 1.0 - smoothstep(0.0, 0.06, length((vUv-vec2(0.62,0.18))*vec2(1.0,2.2)));
-    col = mix(col, vec3(0.95,0.96,0.94), ep);
-    float saddle = (1.0 - smoothstep(0.0, 0.05, abs(vUv.y-0.55)-0.03)) * smoothstep(0.6,1.0,cs);
-    col = mix(col, vec3(0.30,0.33,0.36), saddle*0.5);
+  } else if (uMarkings == 2) { // orca: crisp black/white + eye patches + saddle
+    vec3 white = vec3(0.95, 0.96, 0.93);
+    // Sharp countershade cutline: white throat/belly up to about mid-flank, with
+    // a rear flank "flash" sweeping up toward the tail.
+    float cut = -0.15 + 0.35 * smoothstep(0.55, 0.95, vUv.y); // rises toward the tail
+    float belly = smoothstep(cut + 0.05, cut - 0.05, d);       // hard-ish edge
+    col = mix(col, white, belly);
+    // Two oblique eye patches, one per flank (vUv.x ~0.3 and ~0.7), just above and
+    // behind the eye near the head.
+    float ep = (1.0 - smoothstep(0.0, 1.0, length((vUv - vec2(0.32, 0.15)) * vec2(7.0, 15.0))))
+             + (1.0 - smoothstep(0.0, 1.0, length((vUv - vec2(0.68, 0.15)) * vec2(7.0, 15.0))));
+    col = mix(col, white, clamp(ep, 0.0, 1.0) * step(0.1, d)); // only on the upper flank
+    // Grey saddle patch behind the dorsal fin.
+    float saddle = (1.0 - smoothstep(0.0, 0.06, abs(vUv.y - 0.52) - 0.03)) * smoothstep(0.55, 1.0, cs);
+    col = mix(col, vec3(0.34, 0.38, 0.42), saddle * 0.6);
   }
 
   diffuseColor.rgb = col;

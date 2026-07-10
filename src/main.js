@@ -4,6 +4,7 @@ import GUI from 'lil-gui';
 
 import { makeSpecies, SPECIES_ORDER } from './species/presets.js';
 import { morphParams, applySwimMode, SWIM_MODES, RD_PRESETS } from './core/params.js';
+import { clone } from './core/math.js';
 import { FishRig } from './rig/FishRig.js';
 import { ReactionDiffusion } from './pattern/reactionDiffusion.js';
 import { buildEnvironment, buildMarineSnow } from './scene/environment.js';
@@ -51,6 +52,14 @@ function frameCamera(preserve = false) {
   if (!preserve) {
     camera.position.set(s * 0.7, s * 0.32, dist);
     controls.target.set(0, 0, 0);
+  } else {
+    // Keep the current viewing angle but re-fit the distance to the new size, so
+    // morphing a minnow into a whale backs the camera off instead of leaving it
+    // buried inside the animal.
+    const dir = camera.position.clone().sub(controls.target);
+    if (dir.lengthSq() < 1e-9) dir.set(0, 0, 1);
+    dir.normalize();
+    camera.position.copy(controls.target).addScaledVector(dir, dist);
   }
   camera.near = Math.max(0.001, s * 0.01);
   camera.far = s * 400 + 100;
@@ -93,29 +102,83 @@ const ui = {
 };
 
 const gui = new GUI({ title: '🐟 fish rig' });
+gui.domElement.id = 'gui-panel'; // ID so the pull-up-bar CSS wins over lil-gui's own positioning
+
+/**
+ * Overwrite `params` IN PLACE from a source tree, preserving the identity of the
+ * object and every nested object (swim, surface, pattern, ...). This is what lets
+ * every GUI controller and the RD sim keep their live binding across a species
+ * switch or a morph — replacing `params` wholesale silently orphaned them, so
+ * surface/pattern edits landed on a discarded copy and appeared to do nothing.
+ */
+function syncInto(target, source) {
+  if (Array.isArray(source)) {
+    target.length = 0;
+    for (const v of source) target.push(clone(v));
+    return;
+  }
+  for (const k of Object.keys(target)) if (!(k in source)) delete target[k];
+  for (const k of Object.keys(source)) {
+    const sv = source[k];
+    if (sv && typeof sv === 'object') {
+      const isArr = Array.isArray(sv);
+      if (!target[k] || typeof target[k] !== 'object' || Array.isArray(target[k]) !== isArr) {
+        target[k] = isArr ? [] : {};
+      }
+      syncInto(target[k], sv);
+    } else {
+      target[k] = sv;
+    }
+  }
+}
 
 function setSpecies(id) {
   currentSpecies = id;
   ui.morph = 0;
-  params = makeSpecies(id);
-  rd.p = params.pattern;
+  syncInto(params, makeSpecies(id));
   rd.reseed(params.pattern.seed, params.pattern.seedMode);
   rd.settle();
   rebuild(false);
+  highlightSpecies(id);
   refreshControllers();
 }
 
 function applyMorph() {
   const a = makeSpecies(currentSpecies);
   const b = makeSpecies(ui.blendTo);
-  params = morphParams(a, b, ui.morph);
+  syncInto(params, morphParams(a, b, ui.morph));
   rebuild(true);
   refreshControllers();
 }
 
 // -- Explore folder
 const fExplore = gui.addFolder('explore');
-fExplore.add(ui, 'species', SPECIES_ORDER).name('species').onChange(setSpecies);
+
+// One-tap species chips instead of a dropdown (a dropdown is two taps, and worse
+// on touch). The active species is highlighted.
+const SPECIES_LABELS = {
+  minnow: 'Minnow', clownfish: 'Clownfish', angelfish: 'Angelfish', boxfish: 'Boxfish',
+  pufferfish: 'Puffer', tuna: 'Tuna', eel: 'Eel', orca: 'Orca', bluewhale: 'Whale',
+};
+const speciesChips = {};
+function highlightSpecies(id) {
+  for (const k in speciesChips) speciesChips[k].classList.toggle('active', k === id);
+}
+(function buildSpeciesChips() {
+  const bar = document.createElement('div');
+  bar.className = 'species-chips';
+  for (const id of SPECIES_ORDER) {
+    const b = document.createElement('button');
+    b.className = 'chip';
+    b.textContent = SPECIES_LABELS[id] || id;
+    b.addEventListener('click', () => setSpecies(id));
+    speciesChips[id] = b;
+    bar.appendChild(b);
+  }
+  const container = fExplore.$children || fExplore.domElement;
+  container.insertBefore(bar, container.firstChild);
+})();
+
 fExplore.add(ui, 'blendTo', SPECIES_ORDER).name('blend toward');
 fExplore.add(ui, 'morph', 0, 1, 0.001).name('blend amount').onChange(applyMorph).listen();
 
@@ -199,47 +262,102 @@ fScene.add(ui, 'showSnow').name('marine snow').onChange((v) => (snow.points.visi
 fScene.add({ reset: () => frameCamera(false) }, 'reset').name('reset camera');
 fScene.close();
 
+// -- Share (top-level, always visible): copy a link that encodes this exact fish.
+gui.add({ share: shareFish }, 'share').name('🔗 copy link to this fish');
+
 function onSurface() {
   applyBodySurface(materials.body, params.surface, params.pattern);
   applyFinSurface(materials.fin, params.surface);
 }
 
-// Controllers that need refreshing after params object is replaced.
-const liveControllers = [
-  cSpeed, cStrouhal, cWaves, cGain, cStiff, cPlane, cTurn, cIdle,
-  cScale, cDorsalPeak, cVentralPeak, cWidth, cBox, cInflate, cGirthD,
-  cFeed, cKill, cAniso,
-];
+// `params` keeps its identity across species/morph (see syncInto), so controllers
+// stay bound — a refresh is just re-reading the new values into the widgets.
 function refreshControllers() {
-  // Re-point each controller at the (possibly new) params object.
-  rebindController(cSpeed, params.swim, 'speedBL');
-  rebindController(cStrouhal, params.swim, 'strouhal');
-  rebindController(cWaves, params.swim, 'waves');
-  rebindController(cGain, params.swim.envelope, 'gain');
-  rebindController(cStiff, params.swim.envelope, 'stiffness');
-  rebindController(cPlane, params.swim, 'plane');
-  rebindController(cTurn, params.swim, 'turn');
-  rebindController(cIdle, params.swim, 'idle');
-  rebindController(cScale, params, 'scale');
-  rebindController(cDorsalPeak, params.body.dorsal, 'peak');
-  rebindController(cVentralPeak, params.body.ventral, 'peak');
-  rebindController(cWidth, params.body, 'widthRatio');
-  rebindController(cBox, params.body, 'boxiness');
-  rebindController(cInflate, params.body, 'inflate');
-  rebindController(cGirthD, params.body.dorsal, 'girth');
-  rebindController(cFeed, params.pattern, 'feed');
-  rebindController(cKill, params.pattern, 'kill');
-  rebindController(cAniso, params.pattern, 'anisotropy');
   for (const c of gui.controllersRecursive()) c.updateDisplay();
 }
-function rebindController(ctrl, obj, prop) {
-  ctrl.object = obj;
-  ctrl.property = prop;
-  ctrl.updateDisplay();
+
+// Mobile: the control panel is a pull-up bottom sheet (see index.html CSS). The
+// tab toggles it; collapse it again after a slider drag would be annoying, so it
+// stays open until tapped closed. Also fold the panel by default on small screens.
+const panelTab = document.getElementById('panel-tab');
+gui.domElement.addEventListener('click', (e) => { e.stopPropagation(); });
+
+// When the panel is up as a full-width bottom sheet (mobile), it hides the lower
+// half of the screen — but the fish is centred, so half of it disappears behind
+// the panel. Pan the camera up (setViewOffset, no zoom) so the fish re-centres in
+// the visible area above the panel. On desktop the panel is a narrow bottom-left
+// card and doesn't cover the fish, so no offset is applied.
+function updateViewOffset() {
+  const bottomSheet = matchMedia('(max-width: 560px), (pointer: coarse)').matches;
+  const open = document.body.classList.contains('panel-open');
+  if (bottomSheet && open) {
+    const panelTop = gui.domElement.getBoundingClientRect().top;
+    const hidden = Math.max(0, innerHeight - panelTop); // px covered at the bottom
+    camera.setViewOffset(innerWidth, innerHeight, 0, hidden / 2, innerWidth, innerHeight);
+  } else {
+    camera.clearViewOffset();
+  }
+}
+
+panelTab?.addEventListener('click', () => {
+  const opening = !document.body.classList.contains('panel-open');
+  document.body.classList.toggle('panel-open');
+  // Wait for the slide-up transition before measuring the panel's height.
+  if (opening) setTimeout(updateViewOffset, 330); else updateViewOffset();
+});
+
+// Open by default on roomy screens (discoverability); collapsed on phones so the
+// fish isn't covered.
+if (innerWidth > 560) document.body.classList.add('panel-open');
+
+// ---- shareable genome in the URL ---------------------------------------------
+// A fish IS its parameter tree, so the whole tree base64url-encoded into the hash
+// round-trips any fish — including hand-tuned and morphed ones — as a link.
+function encodeGenome(p) {
+  const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(p))));
+  return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function decodeGenome(s) {
+  const b64 = s.replace(/-/g, '+').replace(/_/g, '/');
+  return JSON.parse(decodeURIComponent(escape(atob(b64))));
+}
+function shareFish() {
+  const url = `${location.origin}${location.pathname}#fish=${encodeGenome(params)}`;
+  history.replaceState(null, '', url);
+  if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => toast('link copied — share your fish!'), () => toast('copy failed — URL is in the address bar'));
+  else toast('URL updated — copy it from the address bar');
+}
+function loadGenomeFromHash() {
+  const m = location.hash.match(/#fish=(.+)/);
+  if (!m) return false;
+  try { syncInto(params, decodeGenome(m[1])); return true; }
+  catch (e) { console.warn('bad fish code in URL', e); return false; }
+}
+let toastTimer = 0;
+function toast(msg) {
+  let el = document.getElementById('toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'toast';
+    el.style.cssText = 'position:fixed;left:50%;top:24px;transform:translateX(-50%);z-index:30;padding:9px 16px;border-radius:999px;background:rgba(20,32,44,.94);color:#eaf2f8;font:600 12px ui-sans-serif,system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.4);transition:opacity .3s;backdrop-filter:blur(6px);';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.opacity = '1';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.style.opacity = '0'; }, 2200);
 }
 
 // ---- boot ---------------------------------------------------------------------
+const sharedFish = loadGenomeFromHash();
+if (sharedFish) {
+  currentSpecies = params.id || currentSpecies;
+  rd.reseed(params.pattern.seed, params.pattern.seedMode);
+  rd.settle();
+}
 rebuild(false);
+highlightSpecies(currentSpecies);
+refreshControllers();
 document.getElementById('loader').style.opacity = '0';
 setTimeout(() => document.getElementById('loader')?.remove(), 700);
 
@@ -258,7 +376,7 @@ function animate() {
   shared.time.value += dt;
   if (!ui.paused) rig.update(dt);
   snow.update(dt);
-  env.update(shared.time.value);
+  env.update(shared.time.value, camera);
   controls.update();
   renderer.render(scene, camera);
 
@@ -273,7 +391,12 @@ addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
+  updateViewOffset();
 });
 
 // expose for console tinkering
-window.FISH = { get params() { return params; }, rig: () => rig, rd, setSpecies };
+window.FISH = {
+  get params() { return params; },
+  rig: () => rig, rd, setSpecies, share: shareFish,
+  encode: () => encodeGenome(params),
+};

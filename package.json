@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.mjs",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "build": "node scripts/build.mjs"
   },
   "keywords": [],
   "author": "",
@@ -15,5 +16,8 @@
     "lil-gui": "^0.21.0",
     "three": "^0.185.1",
     "ws": "^8.21.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
   }
 }

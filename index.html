@@ -29,6 +29,57 @@
       white-space: pre;
     }
     .lil-gui { --width: 300px; --font-size: 11.5px; }
+
+    /* One-tap species chips (injected into the explore folder). */
+    .species-chips { display: flex; flex-wrap: wrap; gap: 5px; padding: 7px 8px 8px; }
+    .species-chips .chip {
+      flex: 1 1 auto; padding: 6px 8px; border: 1px solid rgba(255,255,255,.12);
+      border-radius: 7px; background: rgba(255,255,255,.045); color: #b9c9d6;
+      font: 600 11px ui-sans-serif, system-ui, sans-serif; cursor: pointer;
+      transition: background .12s, border-color .12s, color .12s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .species-chips .chip:hover { background: rgba(255,255,255,.1); color: #eaf2f8; }
+    .species-chips .chip.active {
+      background: #2f6d8c; color: #fff; border-color: #6fb2d2;
+      box-shadow: 0 0 0 1px rgba(111,178,210,.4);
+    }
+
+    /* The control panel is a pull-up bar on ALL viewports: a bar pinned to the
+       bottom, with the lil-gui panel sliding up above it when opened. */
+    #gui-panel {
+      position: fixed !important;
+      top: auto !important; right: auto !important;
+      left: 12px !important; bottom: 46px !important;
+      width: 340px !important; max-width: calc(100vw - 24px) !important;
+      max-height: 72vh; overflow-y: auto;
+      transform: translateY(calc(100% + 60px));
+      transition: transform .3s cubic-bezier(.4,0,.2,1);
+      border-radius: 12px 12px 0 0;
+      box-shadow: 0 -10px 34px rgba(0,0,0,.55);
+      z-index: 20;
+    }
+    body.panel-open #gui-panel { transform: translateY(0); }
+
+    #panel-tab {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      position: fixed; left: 12px; bottom: 12px; z-index: 21;
+      width: 340px; max-width: calc(100vw - 24px);
+      padding: 10px 18px; border: none; border-radius: 10px;
+      background: rgba(18,30,42,.94); color: #cfe0ec;
+      font: 600 13px ui-sans-serif, system-ui, sans-serif; letter-spacing: .02em;
+      box-shadow: 0 4px 16px rgba(0,0,0,.45); backdrop-filter: blur(8px);
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+    }
+    #panel-tab::after { content: '▲'; font-size: 10px; opacity: .8; }
+    body.panel-open #panel-tab::after { content: '▼'; }
+
+    @media (max-width: 560px), (pointer: coarse) {
+      #gui-panel { left: 0 !important; right: 0 !important; width: 100% !important; max-width: 100% !important; border-radius: 14px 14px 0 0; }
+      #panel-tab { left: 0; right: 0; width: 100%; border-radius: 0; }
+      #title { font-size: 12px; }
+      .species-chips .chip { padding: 11px 8px; font-size: 13px; flex: 1 0 calc(33.333% - 5px); }
+    }
     #loader {
       position: fixed; inset: 0; z-index: 10; display: grid; place-items: center;
       background: #05080c; color: #7f97aa; transition: opacity .6s;
@@ -40,6 +91,7 @@
   <div id="app"></div>
   <div id="title"><b>🐟 Fish</b> &nbsp;<span id="species-name">Generic Perciform</span><br /><span id="mode-line">a parameterized skeletal swim rig</span></div>
   <div id="hud"></div>
+  <button id="panel-tab" aria-label="toggle controls">🎛 controls</button>
   <div id="loader">warming the water…</div>
 
   <script type="importmap">

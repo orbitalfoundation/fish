@@ -1,0 +1,20 @@
+# Fish — production web server. Runs in a Caddy container on the exe.dev VM.
+# exe.dev terminates TLS at its proxy, so we serve plain HTTP on :80.
+{
+	admin off
+	auto_https off
+}
+
+:80 {
+	root * /srv/site
+
+	# app.js is re-bundled each deploy (not fingerprinted), so cache modestly.
+	@assets path *.js *.js.map *.css *.png *.ico
+	header @assets Cache-Control "public, max-age=3600"
+
+	encode gzip zstd
+
+	# Single page: unknown paths fall back to index.html.
+	try_files {path} {path}/ /index.html
+	file_server
+}
