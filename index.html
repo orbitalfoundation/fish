@@ -60,6 +60,9 @@
       z-index: 20;
     }
     body.panel-open #gui-panel { transform: translateY(0); }
+    /* Hide lil-gui's own root title bar — our #panel-tab is the single pull-up
+       control, so the built-in "fish rig" bar was a confusing second one. */
+    #gui-panel > .title { display: none !important; }
 
     #panel-tab {
       display: flex; align-items: center; justify-content: center; gap: 8px;

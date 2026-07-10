@@ -2,10 +2,10 @@
 # Build Fish and push it to its exe.dev VM. Run for every update.
 # Bundles the app into dist/ and rsyncs it to /srv/site; Caddy serves it
 # immediately (no restart).
-# Usage: deploy/deploy.sh [vm-name]         (default: fish)
+# Usage: deploy/deploy.sh [vm-name]         (default: marine)
 set -euo pipefail
 
-VM="${1:-${VM:-fish}}"
+VM="${1:-${VM:-marine}}"
 HOST="$VM.exe.xyz"
 DEST="exedev@$HOST"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

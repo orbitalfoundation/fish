@@ -3,10 +3,10 @@
 # it just (re)starts Caddy. Creating the VM and making it PUBLIC are separate
 # steps (see DEPLOYMENT.md): the scoped API token can't `share`, and the
 # control-plane gateway SSH can hang, so do those out-of-band.
-# Usage: deploy/provision.sh [vm-name]      (default: fish)
+# Usage: deploy/provision.sh [vm-name]      (default: marine)
 set -euo pipefail
 
-VM="${1:-${VM:-fish}}"
+VM="${1:-${VM:-marine}}"
 HOST="$VM.exe.xyz"
 DEST="exedev@$HOST"                 # login user on exe.dev VMs is always 'exedev'
 HERE="$(cd "$(dirname "$0")" && pwd)"

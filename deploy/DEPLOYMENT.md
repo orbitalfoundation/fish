@@ -13,10 +13,10 @@ replaceable (source of truth is the git repo; `npm run build` regenerates `dist/
 
 ## What's deployed
 
-- **VM:** `fish` (exe.dev, region `lax`), login user `exedev`.
+- **VM:** `marine` (exe.dev, region `lax`), login user `exedev`.
 - **Serving:** a `caddy:2` Docker container named `fish`, `-p 8000:80`,
   bind-mounting `/srv/site` (the build) and `/srv/Caddyfile` read-only.
-- **URL:** https://fish.exe.xyz (public after the `share set-public` step).
+- **URL:** https://marine.exe.xyz (public after the `share set-public` step).
 
 ## The path
 
@@ -28,13 +28,13 @@ TOKEN=$(tr -d '[:space:]' < deploy/.api-token)
 API() { curl -sS -X POST https://exe.dev/exec -H "Authorization: Bearer $TOKEN" -d "$1"; }
 
 API 'whoami'              # confirm the key is registered
-API 'new --name fish'     # create the VM (returns https_url + proxy_port 8000)
+API 'new --name marine'     # create the VM (returns https_url + proxy_port 8000)
 
-deploy/provision.sh fish  # /srv, Caddyfile, enable docker, run Caddy :8000
-deploy/deploy.sh   fish   # npm run build + rsync dist/ → /srv/site
+deploy/provision.sh marine  # /srv, Caddyfile, enable docker, run Caddy :8000
+deploy/deploy.sh   marine   # npm run build + rsync dist/ → /srv/site
 ```
 
-VM SSH (`ssh exedev@fish.exe.xyz`) works from anywhere; that's what the scripts use.
+VM SSH (`ssh exedev@marine.exe.xyz`) works from anywhere; that's what the scripts use.
 
 ## The one manual step: make it public
 
@@ -42,8 +42,8 @@ VM SSH (`ssh exedev@fish.exe.xyz`) works from anywhere; that's what the scripts 
 public from your own Terminal (keepalives turn a hang into a ~15s failure):
 
 ```sh
-ssh -o ServerAliveInterval=5 -o ServerAliveCountMax=3 exe.dev share port fish 8000
-ssh -o ServerAliveInterval=5 -o ServerAliveCountMax=3 exe.dev share set-public fish
+ssh -o ServerAliveInterval=5 -o ServerAliveCountMax=3 exe.dev share port marine 8000
+ssh -o ServerAliveInterval=5 -o ServerAliveCountMax=3 exe.dev share set-public marine
 ```
 
 …or use the dashboard (`ssh exe.dev browser` → open the VM → make the HTTP proxy
@@ -53,13 +53,13 @@ once public it serves the site.
 ## Verify
 
 ```sh
-curl -sS -o /dev/null -w "%{http_code}\n" https://fish.exe.xyz/                       # 200 when public
-ssh exedev@fish.exe.xyz 'curl -s -o /dev/null -w "%{http_code}\n" localhost:8000/'    # always 200 if Caddy is up
+curl -sS -o /dev/null -w "%{http_code}\n" https://marine.exe.xyz/                       # 200 when public
+ssh exedev@marine.exe.xyz 'curl -s -o /dev/null -w "%{http_code}\n" localhost:8000/'    # always 200 if Caddy is up
 ```
 
 ## Quick recovery
 
-- **Down after reboot:** `ssh exedev@fish.exe.xyz 'sudo systemctl enable --now docker; docker start fish'`
-- **`Host key verification failed`:** VM was reprovisioned — `ssh-keygen -R fish.exe.xyz` (scripts already pass `accept-new`).
+- **Down after reboot:** `ssh exedev@marine.exe.xyz 'sudo systemctl enable --now docker; docker start fish'` (the container is named `fish`)
+- **`Host key verification failed`:** VM was reprovisioned — `ssh-keygen -R marine.exe.xyz` (scripts already pass `accept-new`).
 - **Deploy/gateway SSH hangs:** use the HTTPS API for control-plane, VM SSH for the box.
-- **VM gone:** `API 'new --name fish'` → `provision.sh` → `deploy.sh` → re-run the public step. Everything is in this repo.
+- **VM gone:** `API 'new --name marine'` → `provision.sh` → `deploy.sh` → re-run the public step. Everything is in this repo.

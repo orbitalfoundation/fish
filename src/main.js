@@ -103,6 +103,9 @@ const ui = {
 
 const gui = new GUI({ title: '🐟 fish rig' });
 gui.domElement.id = 'gui-panel'; // ID so the pull-up-bar CSS wins over lil-gui's own positioning
+// Hide lil-gui's own root title bar — our #panel-tab is the single pull-up control,
+// so the built-in "fish rig" bar was a confusing second one.
+if (gui.$title) gui.$title.style.display = 'none';
 
 /**
  * Overwrite `params` IN PLACE from a source tree, preserving the identity of the
