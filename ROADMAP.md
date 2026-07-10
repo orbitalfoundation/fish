@@ -81,6 +81,23 @@ CPU skinning per fish caps the count.*
 
 ---
 
+## North star — expressiveness 🔴
+*Reference: the [Yellow Tang on Sketchfab](https://sketchfab.com/3d-models/yellow-tang-coral-fish-1465b11201464ccb97e88c048c4656ba).
+Not one task — the bar for how alive a fish should feel. Broken into what's reachable
+from the current rig vs what needs new machinery:*
+
+- [ ] **Non-robotic motion (reachable).** Layer burst-and-glide timing + micro-twitches
+      onto the swim so it isn't a clean metronome. Speed/frequency jitter driven by
+      layered noise; occasional startle darts.
+- [ ] **Ductile fin flutter (reachable).** Add non-linear, phase-varied ripple along the
+      fin rays (per-ray noise) instead of a single trailing curl.
+- [ ] **Saccadic eyes (reachable-ish).** Eyes that dart and settle (independent small
+      rotations), maybe converging toward the camera.
+- [ ] **Expressive head (needs new machinery).** A mouth that opens/closes, working gill
+      covers, real eye sockets — a single procedural tube can't express these. Likely a
+      **dedicated parametric head module** (or blendshapes) grafted at the neck. This is
+      the honest limit of the current head model; see the head-resolution note below.
+
 ## Cross-cutting / tech debt
 *Worth doing alongside features, not as a phase.*
 

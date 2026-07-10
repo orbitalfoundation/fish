@@ -163,6 +163,18 @@ See [`ROADMAP.md`](ROADMAP.md). The near-term direction is a **genome + breeding
 a fish already *is* its parameter tree, so serializing it to a shareable code and
 cross-breeding two of them is a small step that turns the demo into a toy.
 
+### North star — expressiveness
+
+Reference for where we'd like the *feeling* to get someday:
+[**Yellow Tang (Sketchfab)**](https://sketchfab.com/3d-models/yellow-tang-coral-fish-1465b11201464ccb97e88c048c4656ba).
+Watch the details our procedural approach doesn't yet capture: motion that isn't
+robotic (a sudden twitch of propulsion, then a lazy glide), fins fluttering in a
+non-linear, ductile way rather than a clean sine, gills working, a small mouth opening
+and closing, eyes darting. Some of this is reachable from here — non-robotic timing and
+secondary fin jitter are layers on the existing rig — but a genuinely expressive **head**
+(jaw, mouth cavity, gill covers, eye sockets) is beyond a single procedural tube and
+likely needs a dedicated head module. Kept here as the bar to aim at.
+
 ## Known limitations / next steps
 
 - Fin membranes trail plausibly but don't yet have per-ray splay/fold (erecting and

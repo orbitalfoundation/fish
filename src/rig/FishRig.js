@@ -70,12 +70,17 @@ export class FishRig extends THREE.Group {
     const s = params.eyes.s;
     const e = profile.extents(s);
     const x = profile.xAt(s);
-    const y = profile.midY(s) * L + params.eyes.height * e.half * L;
+    const hy = params.eyes.height; // fraction of half-depth, above midline
+    const y = profile.midY(s) * L + hy * e.half * L;
     const bone = this.skeleton.bones[this.skeleton._nearestBone(s)];
     const bx = bone.getWorldPosition(new THREE.Vector3()).x;
 
+    // Seat the eye on the actual flank surface at that height (the cross-section
+    // narrows toward the top), sitting just proud so it reads as a bulging eye
+    // rather than being buried under a fuller head.
+    const zSurf = e.width * L * Math.sqrt(Math.max(0.04, 1 - hy * hy));
     for (const side of [1, -1]) {
-      const z = side * e.width * L * 0.82;
+      const z = side * (zSurf - radius * L * 0.35);
       const eye = new THREE.Group();
       const ball = new THREE.Mesh(eg, mat);
       const ring = new THREE.Mesh(new THREE.SphereGeometry(radius * L * 1.35, 20, 16), ringMat);

@@ -129,14 +129,15 @@ export function buildBodyGeometry(params) {
       index.push(a, c, b, b, c, d);
     }
   }
-  // Nose fan (first ring, i=0): wound to face forward/outward.
+  // Cap fans. Winding matches the body's outward orientation: for a shared ring
+  // edge, the adjacent cap triangle must traverse it opposite to the body quad,
+  // or the cap normals point inward and get back-face culled (a hole in the snout).
   for (let j = 0; j < nRad; j++) {
-    index.push(noseCap, j + 1, j);
+    index.push(noseCap, j, j + 1); // nose fan (first ring, i=0)
   }
-  // Tail fan (last ring, i=nSec): opposite winding.
   const lastBase = nSec * ringVerts;
   for (let j = 0; j < nRad; j++) {
-    index.push(tailCap, lastBase + j, lastBase + j + 1);
+    index.push(tailCap, lastBase + j + 1, lastBase + j); // tail fan (last ring)
   }
 
   const geo = new THREE.BufferGeometry();
