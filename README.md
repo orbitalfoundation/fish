@@ -155,6 +155,12 @@ from **Kondo & Asai 1995, *Nature* 376** (the marine angelfish *Pomacanthus*). L
 chromatophore recipe (melanophore / xanthophore / erythrophore / iridophore /
 leucophore) from Fujii and the Australian Museum.
 
+## Where it's going
+
+See [`ROADMAP.md`](ROADMAP.md). The near-term direction is a **genome + breeding** game:
+a fish already *is* its parameter tree, so serializing it to a shareable code and
+cross-breeding two of them is a small step that turns the demo into a toy.
+
 ## Known limitations / next steps
 
 - Fin membranes trail plausibly but don't yet have per-ray splay/fold (erecting and
