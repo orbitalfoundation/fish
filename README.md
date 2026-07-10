@@ -1,5 +1,7 @@
 # 🐟 Fish — a parameterized skeletal swim rig
 
+### ▸ Live demo: **[marine.exe.xyz](https://marine.exe.xyz)**  ·  tap a species, drag *blend amount*, then **🔗 copy link to this fish** to share it.
+
 A real-time, biologically-grounded fish rig in Three.js. One adaptable bone-driven,
 skinned rig spans **minnow → clownfish → angelfish → boxfish → pufferfish → tuna →
 eel → orca → blue whale**, and you can slide continuously between any two of them.
