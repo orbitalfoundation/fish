@@ -1,0 +1,15 @@
+# dependencies
+node_modules/
+
+# os / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# logs / scratch
+*.log
+/tmp/
+
+# build output (none yet — this runs unbundled)
+dist/

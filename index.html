@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fish — a parameterized skeletal swim rig</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🐟</text></svg>" />
+  <link rel="stylesheet" href="/node_modules/lil-gui/dist/lil-gui.css" />
+  <style>
+    :root { color-scheme: dark; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; background: #05080c; }
+    #app { position: fixed; inset: 0; }
+    canvas { display: block; }
+
+    #title {
+      position: fixed; left: 18px; top: 16px; z-index: 5;
+      font: 500 13px/1.4 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: #9fb3c4; text-shadow: 0 1px 3px rgba(0,0,0,.6); pointer-events: none;
+      letter-spacing: .02em;
+    }
+    #title b { color: #eaf2f8; font-weight: 600; font-size: 15px; }
+    #title span { color: #5f7688; }
+
+    #hud {
+      position: fixed; left: 18px; bottom: 14px; z-index: 5;
+      font: 400 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+      color: #6b8296; text-shadow: 0 1px 2px rgba(0,0,0,.7); pointer-events: none;
+      white-space: pre;
+    }
+    .lil-gui { --width: 300px; --font-size: 11.5px; }
+    #loader {
+      position: fixed; inset: 0; z-index: 10; display: grid; place-items: center;
+      background: #05080c; color: #7f97aa; transition: opacity .6s;
+      font: 400 13px ui-sans-serif, system-ui, sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="title"><b>🐟 Fish</b> &nbsp;<span id="species-name">Generic Perciform</span><br /><span id="mode-line">a parameterized skeletal swim rig</span></div>
+  <div id="hud"></div>
+  <div id="loader">warming the water…</div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "/node_modules/three/build/three.module.js",
+      "three/addons/": "/node_modules/three/examples/jsm/",
+      "lil-gui": "/node_modules/lil-gui/dist/lil-gui.esm.js"
+    }
+  }
+  </script>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "fish",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.mjs",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "lil-gui": "^0.21.0",
+    "three": "^0.185.1",
+    "ws": "^8.21.0"
+  }
+}
