@@ -50,6 +50,13 @@ ssh -o ServerAliveInterval=5 -o ServerAliveCountMax=3 exe.dev share set-public m
 public). A private VM answers the public URL with a `307 → /__exe.dev/login`;
 once public it serves the site.
 
+## Continuous deployment (push = deploy)
+
+`deploy/setup-autodeploy.sh marine` installs an on-VM systemd timer that polls
+GitHub `main` every ~2 min and rebuilds + redeploys on change. Once installed,
+pushing to `main` is the deploy; `deploy/deploy.sh` remains a manual override.
+Watch it: `ssh exedev@marine.exe.xyz journalctl -u fish-autodeploy -f`.
+
 ## Verify
 
 ```sh

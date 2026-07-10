@@ -100,8 +100,8 @@ export function defaultParams() {
     scale: 1.0, // total body length in world units (metres)
 
     body: {
-      sections: 140, // geometry rings along the body
-      radial: 30, // vertices around each ring
+      sections: 170, // geometry rings along the body (biased toward the head)
+      radial: 36, // vertices around each ring (rounder cross-section / melon)
 
       // Dorsal and ventral silhouettes are independent curves. This is the single
       // biggest win for shape fidelity: a fish's back and belly are not mirrored.
@@ -116,6 +116,14 @@ export function defaultParams() {
       headWide: 1.1, // width multiplier at the snout (skulls are round)
       boxiness: 2.15, // superellipse exponent: 2 = ellipse, 6+ = boxfish carapace
       inflate: 0.0, // pufferfish: blends the whole profile toward a sphere
+
+      // Head shape. `snout` rounds the snout tip (0 = sharp point like an eel,
+      // ~0.5 = blunt round like a puffer). `melon` adds a bulbous forehead
+      // (orca/dolphin melon, angelfish brow) centred at `melonPos`.
+      snout: 0.18,
+      melon: 0.0,
+      melonPos: 0.12,
+      melonWidth: 0.07,
     },
 
     spine: { joints: 28 },

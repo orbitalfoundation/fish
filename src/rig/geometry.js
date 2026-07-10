@@ -1,6 +1,18 @@
 import * as THREE from 'three';
-import { se } from '../core/math.js';
+import { se, lerp } from '../core/math.js';
 import { Profile } from './profile.js';
+
+/**
+ * Remap uniform section index -> body coordinate, clustering rings toward the
+ * head and tail (cosine easing). Heads are where people look and tails carry the
+ * caudal peduncle, so both deserve more geometry than the mid-body. An extra pull
+ * toward the head (the sqrt term, weighted small) biases density forward.
+ */
+function sBias(u) {
+  const ends = 0.5 - 0.5 * Math.cos(Math.PI * u); // dense at both ends
+  const s = lerp(u, ends, 0.55);
+  return lerp(s, Math.sqrt(s), 0.12); // nudge a little more density to the head
+}
 
 /**
  * Builds the body as a skinned tube: a stack of cross-section rings from snout to
@@ -23,7 +35,9 @@ export function buildBodyGeometry(params) {
   const nBones = Math.max(2, params.spine.joints | 0);
 
   const ringVerts = nRad + 1; // +1 duplicates the seam so uv.v is continuous
-  const vertCount = ringVerts * (nSec + 1);
+  const noseCap = ringVerts * (nSec + 1); // index of the nose cap vertex
+  const tailCap = noseCap + 1;
+  const vertCount = ringVerts * (nSec + 1) + 2; // + nose & tail cap centres
 
   const pos = new Float32Array(vertCount * 3);
   const uv = new Float32Array(vertCount * 2);
@@ -36,7 +50,7 @@ export function buildBodyGeometry(params) {
 
   let vi = 0;
   for (let i = 0; i <= nSec; i++) {
-    const s = i / nSec;
+    const s = sBias(i / nSec);
     const x = profile.xAt(s);
     const e = profile.extents(s);
     const n = profile.boxiness(s);
@@ -85,19 +99,44 @@ export function buildBodyGeometry(params) {
     }
   }
 
-  // Index buffer: two triangles per quad, skipping the seam wrap (handled by dup).
-  const quads = nSec * nRad;
-  const index = new Uint32Array(quads * 6);
-  let ii = 0;
+  // Nose and tail cap centre vertices, so the (now rounded, nonzero-radius) snout
+  // and peduncle are closed with a hemispherical fan instead of a hard disc.
+  const capVert = (idx, s, forward, bone) => {
+    const e = profile.extents(s);
+    const rAvg = 0.5 * (e.up + e.down) * L;
+    const x = profile.xAt(s) + forward * rAvg * 0.9; // push the tip out to round it
+    pos[idx * 3] = x;
+    pos[idx * 3 + 1] = profile.midY(s) * L;
+    pos[idx * 3 + 2] = 0;
+    uv[idx * 2] = 0.5;
+    uv[idx * 2 + 1] = s;
+    skinIndex[idx * 4] = bone;
+    skinWeight[idx * 4] = 1;
+    aBody[idx] = s;
+    aDorsal[idx] = 0;
+  };
+  capVert(noseCap, 0, +1, 0);
+  capVert(tailCap, 1, -1, nBones - 1);
+
+  // Index buffer: quad grid + two triangle fans for the caps.
+  const index = [];
   for (let i = 0; i < nSec; i++) {
     for (let j = 0; j < nRad; j++) {
       const a = i * ringVerts + j;
       const b = a + 1;
       const c = a + ringVerts;
       const d = c + 1;
-      index[ii++] = a; index[ii++] = c; index[ii++] = b;
-      index[ii++] = b; index[ii++] = c; index[ii++] = d;
+      index.push(a, c, b, b, c, d);
     }
+  }
+  // Nose fan (first ring, i=0): wound to face forward/outward.
+  for (let j = 0; j < nRad; j++) {
+    index.push(noseCap, j + 1, j);
+  }
+  // Tail fan (last ring, i=nSec): opposite winding.
+  const lastBase = nSec * ringVerts;
+  for (let j = 0; j < nRad; j++) {
+    index.push(tailCap, lastBase + j, lastBase + j + 1);
   }
 
   const geo = new THREE.BufferGeometry();
@@ -107,7 +146,7 @@ export function buildBodyGeometry(params) {
   geo.setAttribute('skinWeight', new THREE.BufferAttribute(skinWeight, 4));
   geo.setAttribute('aBody', new THREE.BufferAttribute(aBody, 1));
   geo.setAttribute('aDorsal', new THREE.BufferAttribute(aDorsal, 1));
-  geo.setIndex(new THREE.BufferAttribute(index, 1));
+  geo.setIndex(index); // plain array -> three picks Uint16/Uint32 automatically
   geo.computeVertexNormals();
   weldSeamNormals(geo, nSec, nRad, ringVerts);
   geo.computeTangents === undefined || null; // tangents added later if needed

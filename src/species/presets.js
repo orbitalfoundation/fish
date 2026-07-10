@@ -202,6 +202,7 @@ function tuna() {
     pedNarrow: 0.85,
     headWide: 1.02,
     boxiness: 2.3,
+    snout: 0.12, // streamlined, slightly pointed
   });
   applySwimMode(p, 'thunniform');
   Object.assign(p.swim, { speedBL: 3.4, strouhal: 0.3, plane: 0 });
@@ -261,6 +262,7 @@ function eel() {
     pedNarrow: 0.35,
     headWide: 1.2,
     boxiness: 2.0,
+    snout: 0.08, // pointed
   });
   p.spine.joints = 40; // needs the resolution to carry >1 wavelength cleanly
   applySwimMode(p, 'anguilliform');
@@ -307,6 +309,7 @@ function boxfish() {
     pedNarrow: 0.7,
     headWide: 1.0,
     boxiness: 5.5, // the carapace
+    snout: 0.55, // blunt, squared-off face
   });
   applySwimMode(p, 'ostraciiform');
   Object.assign(p.swim, { speedBL: 0.8, strouhal: 0.5, plane: 0, freqOverride: 2.6 });
@@ -354,6 +357,10 @@ function angelfish() {
     pedNarrow: 0.35,
     headWide: 1.25,
     boxiness: 2.0,
+    snout: 0.22,
+    melon: 0.18, // steep forehead / brow
+    melonPos: 0.16,
+    melonWidth: 0.09,
   });
   applySwimMode(p, 'carangiform');
   Object.assign(p.swim, { speedBL: 0.7, strouhal: 0.35, plane: 0 });
@@ -412,6 +419,7 @@ function pufferfish() {
     headWide: 1.05,
     boxiness: 2.4,
     inflate: 0.15,
+    snout: 0.45, // blunt, rounded face
   });
   applySwimMode(p, 'ostraciiform');
   Object.assign(p.swim, { speedBL: 0.55, strouhal: 0.5, plane: 0, freqOverride: 2.0 });
@@ -511,8 +519,12 @@ function orca() {
     peduncle: 0.028,
     widthRatio: 0.74,
     pedNarrow: 0.6,
-    headWide: 1.0,
+    headWide: 1.05,
     boxiness: 2.2,
+    snout: 0.4, // rounded, no beak
+    melon: 0.55, // the bulbous forehead
+    melonPos: 0.085,
+    melonWidth: 0.13,
   });
   applySwimMode(p, 'thunniform');
   Object.assign(p.swim, {
@@ -574,8 +586,12 @@ function blueWhale() {
     peduncle: 0.018,
     widthRatio: 0.82,
     pedNarrow: 0.55,
-    headWide: 1.3,
+    headWide: 1.35,
     boxiness: 2.15,
+    snout: 0.3, // broad, blunt rostrum (not a melon bulge)
+    melon: 0.12,
+    melonPos: 0.06,
+    melonWidth: 0.16,
   });
   p.spine.joints = 32;
   applySwimMode(p, 'thunniform');
