@@ -23,9 +23,11 @@ parameter tree, and `morphParams`/`lerpTree` already blend two of them.*
 - [ ] **Gene schema.** A metadata layer over `core/params.js`: for each numeric leaf,
       a `{ min, max, mutable, label }`. Makes bred/mutated fish stay viable (clamp to
       plausible ranges) and auto-generates GUI bounds instead of hand-typed ones.
-- [x] ✅ **Serialize genome → shareable code.** The whole parameter tree base64url-encodes
-      into the URL hash; **🔗 copy link to this fish** copies it. *(Follow-up: the code is
-      ~5 KB — compact it via the gene schema or gzip so links are shorter.)*
+- [x] ✅ **Serialize genome → shareable code.** The URL hash encodes the baseline
+      preset/morph plus only the tweaked leaves (`src/genome.js`), so a typical link is
+      under 100 chars (`#fish=orca~swim.speedBL=2.75`); hand-sculpted fish fall back to a
+      deflate-compressed full tree (~1.5 KB). Old ~5 KB whole-tree links still decode and
+      are promoted to the compact form on load.
 - [x] ✅ **Load genome** from the URL hash on boot.
 - [ ] **Breeding.** `breed(a, b, rng)` = per-gene pick-from-either-parent (Mendelian) +
       small bounded mutation. Reuses the tree walker from `lerpTree`.

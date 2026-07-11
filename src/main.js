@@ -2,8 +2,9 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import GUI from 'lil-gui';
 
-import { makeSpecies, SPECIES_ORDER } from './species/presets.js';
+import { makeSpecies, SPECIES, SPECIES_ORDER } from './species/presets.js';
 import { morphParams, applySwimMode, SWIM_MODES, RD_PRESETS } from './core/params.js';
+import { encodeGenome, encodeGenomeSync, decodeGenome } from './genome.js';
 import { clone } from './core/math.js';
 import { FishRig } from './rig/FishRig.js';
 import { BRAINS } from './rig/behavior.js';
@@ -39,6 +40,9 @@ const shared = { time: { value: 0 } };
 
 // ---- reaction-diffusion (persistent across rig rebuilds) ----------------------
 let params = makeSpecies('minnow');
+// What the URL encoder diffs `params` against: the preset ({s}) or morph pair
+// ({s,b,t}) the current fish started from. See src/genome.js.
+let genomeBase = { s: 'minnow' };
 const rd = new ReactionDiffusion(renderer, params);
 rd.settle();
 
@@ -139,17 +143,21 @@ function syncInto(target, source) {
 // Keep the URL in sync with the fish as it's edited, so people can just copy it
 // from the address bar. Debounced (encoding the whole tree on every slider frame
 // would be wasteful), and replaceState so it doesn't spam browser history.
-let urlTimer = 0;
+let urlTimer = 0, urlSeq = 0;
 function scheduleUrlUpdate() {
   clearTimeout(urlTimer);
-  urlTimer = setTimeout(() => {
-    history.replaceState(null, '', `${location.origin}${location.pathname}#fish=${encodeGenome(params)}`);
+  urlTimer = setTimeout(async () => {
+    const seq = ++urlSeq;
+    const code = await encodeGenome(params, genomeBase);
+    // A newer edit may have started encoding while we awaited; let it win.
+    if (seq === urlSeq) history.replaceState(null, '', `${location.origin}${location.pathname}#fish=${code}`);
   }, 500);
 }
 
 function setSpecies(id) {
   currentSpecies = id;
   ui.morph = 0;
+  genomeBase = { s: id };
   syncInto(params, makeSpecies(id));
   rd.reseed(params.pattern.seed, params.pattern.seedMode);
   rd.settle();
@@ -162,6 +170,7 @@ function setSpecies(id) {
 function applyMorph() {
   const a = makeSpecies(currentSpecies);
   const b = makeSpecies(ui.blendTo);
+  genomeBase = ui.morph > 0 ? { s: currentSpecies, b: ui.blendTo, t: ui.morph } : { s: currentSpecies };
   syncInto(params, morphParams(a, b, ui.morph));
   rebuild(true);
   refreshControllers();
@@ -332,27 +341,39 @@ panelTab?.addEventListener('click', () => {
 if (innerWidth > 560) document.body.classList.add('panel-open');
 
 // ---- shareable genome in the URL ---------------------------------------------
-// A fish IS its parameter tree, so the whole tree base64url-encoded into the hash
-// round-trips any fish — including hand-tuned and morphed ones — as a link.
-function encodeGenome(p) {
-  const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(p))));
-  return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-function decodeGenome(s) {
-  const b64 = s.replace(/-/g, '+').replace(/_/g, '/');
-  return JSON.parse(decodeURIComponent(escape(atob(b64))));
-}
+// A fish is encoded as its baseline preset/morph plus only the tweaked leaves
+// (see src/genome.js), so a typical link is <100 chars instead of the old ~3k
+// whole-tree base64 — which still decodes, for links already in the wild.
 function shareFish() {
-  const url = `${location.origin}${location.pathname}#fish=${encodeGenome(params)}`;
+  // Prefer the synchronous diff encoding: the clipboard write then happens
+  // inside the click gesture (Safari drops permission across an await).
+  const fast = encodeGenomeSync(params, genomeBase);
+  if (fast !== null) copyShareUrl(fast);
+  else encodeGenome(params, genomeBase).then(copyShareUrl);
+}
+function copyShareUrl(code) {
+  const url = `${location.origin}${location.pathname}#fish=${code}`;
   history.replaceState(null, '', url);
   if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => toast('link copied — share your fish!'), () => toast('copy failed — URL is in the address bar'));
   else toast('URL updated — copy it from the address bar');
 }
-function loadGenomeFromHash() {
+async function loadGenomeFromHash() {
   const m = location.hash.match(/#fish=(.+)/);
   if (!m) return false;
-  try { syncInto(params, decodeGenome(m[1])); return true; }
-  catch (e) { console.warn('bad fish code in URL', e); return false; }
+  try {
+    const { params: tree, base } = await decodeGenome(m[1]);
+    syncInto(params, tree);
+    // Legacy whole-tree links carry no baseline; diff future edits against the
+    // species they claim to be (or minnow if the id is unrecognized).
+    genomeBase = base ?? { s: SPECIES[params.id] ? params.id : 'minnow' };
+    if (base === null) {
+      // Promote old-style links to the compact format in the address bar, so
+      // anything re-shared from here is short.
+      const code = await encodeGenome(params, genomeBase);
+      history.replaceState(null, '', `${location.origin}${location.pathname}#fish=${code}`);
+    }
+    return true;
+  } catch (e) { console.warn('bad fish code in URL', e); return false; }
 }
 let toastTimer = 0;
 function toast(msg) {
@@ -373,17 +394,26 @@ function toast(msg) {
 gui.onChange(scheduleUrlUpdate);
 
 // ---- boot ---------------------------------------------------------------------
-const sharedFish = loadGenomeFromHash();
-if (sharedFish) {
-  currentSpecies = params.id || currentSpecies;
-  rd.reseed(params.pattern.seed, params.pattern.seedMode);
-  rd.settle();
-}
-rebuild(false);
-highlightSpecies(currentSpecies);
-refreshControllers();
-document.getElementById('loader').style.opacity = '0';
-setTimeout(() => document.getElementById('loader')?.remove(), 700);
+// Async because a z:-compressed genome inflates through DecompressionStream.
+// The IIFE's first await defers the rest past the module body, so everything
+// below (clock, hud, animate) exists by the time it resumes.
+(async () => {
+  const sharedFish = await loadGenomeFromHash();
+  if (sharedFish) {
+    currentSpecies = genomeBase.s;
+    // A morph link restores the blend controls too, so the slider keeps
+    // working from where the shared fish was.
+    if (genomeBase.b != null) { ui.blendTo = genomeBase.b; ui.morph = genomeBase.t; }
+    rd.reseed(params.pattern.seed, params.pattern.seedMode);
+    rd.settle();
+  }
+  rebuild(false);
+  highlightSpecies(currentSpecies);
+  refreshControllers();
+  document.getElementById('loader').style.opacity = '0';
+  setTimeout(() => document.getElementById('loader')?.remove(), 700);
+  animate();
+})();
 
 // ---- loop ---------------------------------------------------------------------
 const clock = new THREE.Clock();
@@ -409,7 +439,6 @@ function animate() {
   hud.textContent =
     `${params.id}  ·  ${rig.swimmer.freq.toFixed(2)} Hz  ·  ${(rig.span).toFixed(2)} m  ·  ${fps} fps`;
 }
-animate();
 
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
@@ -422,5 +451,5 @@ addEventListener('resize', () => {
 window.FISH = {
   get params() { return params; },
   rig: () => rig, rd, setSpecies, share: shareFish,
-  encode: () => encodeGenome(params),
+  encode: () => encodeGenome(params, genomeBase),
 };
