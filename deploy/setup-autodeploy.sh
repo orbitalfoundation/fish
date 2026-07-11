@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # One-time installer for on-VM continuous deployment. Run from the repo root:
-#   deploy/setup-autodeploy.sh [vm-name]      (default: marine)
+#   deploy/setup-autodeploy.sh [vm-name]      (default: fishes)
 #
 # After this, the VM polls GitHub main every ~2 minutes and, when the SHA moves,
 # pulls + rebuilds + syncs into /srv/site. Pushing to main IS the deploy;
 # deploy/deploy.sh remains a manual override.
 set -euo pipefail
 
-VM="${1:-${VM:-marine}}"
+VM="${1:-${VM:-fishes}}"
 HOST="$VM.exe.xyz"
 DEST="exedev@$HOST"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

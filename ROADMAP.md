@@ -2,7 +2,7 @@
 
 Where the fish rig goes next. Ordered by leverage — earlier phases unlock later ones.
 
-> **Live:** [marine.exe.xyz](https://marine.exe.xyz) · **Repo:** [github.com/orbitalfoundation/fish](https://github.com/orbitalfoundation/fish)
+> **Live:** [fishes.exe.xyz](https://fishes.exe.xyz) · **Repo:** [github.com/orbitalfoundation/fish](https://github.com/orbitalfoundation/fish)
 > Progress so far: the demo is deployed and shareable (fish encode into the URL), the
 > water/ambiance has a first pass, and the exe.dev build+deploy pipeline is done.
 > The active work is **head/face resolution** (see cross-cutting) before wider sharing.
@@ -77,8 +77,8 @@ CPU skinning per fish caps the count.*
       proxy. See `deploy/DEPLOYMENT.md`.
 - [x] ✅ **esbuild build step** — `npm run build` bundles a self-contained `dist/`
       (index.html + app.js, ~630 KB).
-- [x] ✅ **Deployed & public** at [marine.exe.xyz](https://marine.exe.xyz); genome-in-URL
-      sharing works with no server. Redeploy with `deploy/deploy.sh marine`.
+- [x] ✅ **Deployed & public** at [fishes.exe.xyz](https://fishes.exe.xyz); genome-in-URL
+      sharing works with no server. Redeploy with `deploy/deploy.sh fishes`.
 - [ ] *(Optional)* mirror to a CDN host as primary (better availability for a static site).
 
 ---

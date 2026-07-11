@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs ON the marine VM (installed by deploy/setup-autodeploy.sh, fired by a
+# Runs ON the fishes VM (installed by deploy/setup-autodeploy.sh, fired by a
 # systemd timer). Polls GitHub main; when the SHA moves, pulls, rebuilds the
 # bundle, and syncs dist/ into /srv/site — Caddy picks the new files up at once.
 #
