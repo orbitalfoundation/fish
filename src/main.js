@@ -39,17 +39,18 @@ const snow = buildMarineSnow(scene);
 const shared = { time: { value: 0 } };
 
 // ---- reaction-diffusion (persistent across rig rebuilds) ----------------------
-let params = makeSpecies('minnow');
+const DEFAULT_ID = SPECIES_ORDER[Math.floor(Math.random() * SPECIES_ORDER.length)];
+let params = makeSpecies(DEFAULT_ID);
 // What the URL encoder diffs `params` against: the preset ({s}) or morph pair
 // ({s,b,t}) the current fish started from. See src/genome.js.
-let genomeBase = { s: 'minnow' };
+let genomeBase = { s: DEFAULT_ID };
 const rd = new ReactionDiffusion(renderer, params);
 rd.settle();
 
 // ---- the fish -----------------------------------------------------------------
 let materials = null;
 let rig = null;
-let currentSpecies = 'minnow';
+let currentSpecies = DEFAULT_ID;
 
 function frameCamera(preserve = false) {
   const s = rig.span;
